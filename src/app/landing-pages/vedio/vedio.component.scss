@@ -1,0 +1,42 @@
+.vedio-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+video {
+    position: relative;
+    width: 100%;
+    height: auto;
+    z-index: 1;
+    pointer-events: none;
+    /* Make the video unclickable */
+}
+
+.floating-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    /* Make the floating container unclickable */
+    background: transparent;
+    /* Transparent background */
+    overflow: hidden;
+    /* Ensure content doesn't overflow */
+}
+
+.error-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: red;
+    font-size: 1.5rem;
+    text-align: center;
+}

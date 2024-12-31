@@ -1,0 +1,45 @@
+<div class="dynamic-encryption-container">
+    <h2>Dynamic Data Encryption</h2>
+
+    <!-- Dynamic Form -->
+    <form [formGroup]="encryptionForm" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+            <label for="type">Data Type</label>
+            <select formControlName="type" id="type" required>
+                <option value="video">Video</option>
+                <option value="article">Article</option>
+                <option value="quiz">Quiz</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="videoUrl">Video URL</label>
+            <input type="url" id="videoUrl" formControlName="videoUrl" placeholder="https://example.com/video.mp4"
+                required />
+        </div>
+
+        <div class="form-group">
+            <label for="jsonData">JSON Data</label>
+            <textarea id="jsonData" formControlName="jsonData"
+                placeholder='[{ "startTime": 0, "endTime": 30, "htmlFileUrl": "https://example.com/part1.html" }]'
+                required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="validityDays">Validity (Days)</label>
+            <input type="number" id="validityDays" formControlName="validityDays" min="1" required />
+        </div>
+
+        <button type="submit">Encrypt</button>
+    </form>
+
+    <!-- Dropdown for Encrypted Results -->
+    <div *ngIf="encryptedData.length > 0" class="encrypted-data-container">
+        <h3>Encrypted Data</h3>
+        <select>
+            <option *ngFor="let data of encryptedData" [value]="data">
+                {{ data }}
+            </option>
+        </select>
+    </div>
+</div>
