@@ -8,7 +8,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:interactive-video-landing": "node dist/interactive-video-landing/server/server.mjs",
-    "deploy:github": "git merge main && ng build --configuration=production --output-path=dist/interactive-video-landing --base-href=https://corejsc.github.io/interactive-video-landing/ && npx angular-cli-ghpages --dir=dist/interactive-video-landing/browser",
+    "deploy:github": "git merge main && ng build --configuration=production --output-path=dist/gh-pages --base-href=https://CoreJSC.github.io/interactive-video-landing/ && npx angular-cli-ghpages --dir=dist/gh-pages/browser",
     "deploy:github:main": "git checkout gh-pages && git merge main && npm  run deploy:github"
   },
   "private": true,
