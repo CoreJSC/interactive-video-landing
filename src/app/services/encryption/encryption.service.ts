@@ -1,5 +1,3 @@
-// src/app/services/encryption/encryption.service.ts
-
 import { Injectable } from '@angular/core';
 import * as CryptoJS from 'crypto-js';
 import { EncryptedPayload } from '../../shared/interfaces/data.model';

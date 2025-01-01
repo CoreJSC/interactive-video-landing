@@ -1,5 +1,3 @@
-// src/app/dynamic-encryption/dynamic-encryption.component.ts
-
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
