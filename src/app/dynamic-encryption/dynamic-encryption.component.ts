@@ -1,13 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, ReactiveFormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
 import { EncryptionService } from '../services/encryption/encryption.service';
 import { EncryptedPayload, Metadata } from '../shared/interfaces/data.model';
 import { VideoData, VideoPart } from '../shared/interfaces/video-data.model';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-dynamic-encryption',
-  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -16,28 +15,38 @@ import { VideoData, VideoPart } from '../shared/interfaces/video-data.model';
   styleUrls: ['./dynamic-encryption.component.scss'],
 })
 export class DynamicEncryptionComponent implements OnInit {
+  mode: 'encrypt' | 'decrypt' = 'encrypt';
   dataTypes: string[] = ['Video']; // Extendable for more types
+
   encryptionForm: FormGroup;
+  decryptionForm: FormGroup;
   encryptedData: string = '';
+  decryptionResult: any = null;
 
   constructor(private fb: FormBuilder, private encryptionService: EncryptionService) {
+    // Encryption Form Initialization
     this.encryptionForm = this.fb.group({
-      dataType: ['Video', Validators.required], // Data type selection
+      dataType: ['Video', Validators.required],
       metadata: this.fb.group({
         creationDate: [this.getCurrentDateTimeLocal(), Validators.required],
         startAfterDays: [0, [Validators.required, Validators.min(0)]],
         validityDays: [30, [Validators.required, Validators.min(1)]],
       }),
-      data: this.fb.group({}), // Placeholder for dynamic data
+      data: this.fb.group({}),
+    });
+
+    // Decryption Form Initialization
+    this.decryptionForm = this.fb.group({
+      encryptedData: ['', [Validators.required]],
     });
   }
 
   ngOnInit(): void {
-    this.buildForm();
+    this.buildEncryptionForm();
 
     // Listen to dataType changes to rebuild the form dynamically
-    this.encryptionForm.get('dataType')?.valueChanges.subscribe((type) => {
-      this.buildForm();
+    this.encryptionForm.get('dataType')?.valueChanges.subscribe(() => {
+      this.buildEncryptionForm();
     });
   }
 
@@ -48,9 +57,10 @@ export class DynamicEncryptionComponent implements OnInit {
     return now.toISOString().substring(0, 16);
   }
 
-  buildForm(): void {
+  // Build Encryption Form based on dataType
+  buildEncryptionForm(): void {
     const dataGroup = this.encryptionForm.get('data') as FormGroup;
-    dataGroup.reset(); // Clear existing controls
+    dataGroup.reset();
 
     if (this.encryptionForm.get('dataType')?.value === 'Video') {
       const videoGroup = this.fb.group({
@@ -69,6 +79,7 @@ export class DynamicEncryptionComponent implements OnInit {
     // Add more data types here if needed
   }
 
+  // Create Video Part FormGroup
   createVideoPart(): FormGroup {
     return this.fb.group({
       startTime: [0, [Validators.required, Validators.min(0)]],
@@ -77,20 +88,24 @@ export class DynamicEncryptionComponent implements OnInit {
     });
   }
 
+  // Get JSON Data FormArray
   get jsonData(): FormArray {
     return (this.encryptionForm.get('data')?.get('video') as FormGroup)?.get('jsonData') as FormArray;
   }
 
+  // Add Video Part
   addVideoPart(): void {
     this.jsonData.push(this.createVideoPart());
   }
 
+  // Remove Video Part
   removeVideoPart(index: number): void {
     if (this.jsonData.length > 1) {
       this.jsonData.removeAt(index);
     }
   }
 
+  // Encrypt Function
   encrypt(): void {
     if (this.encryptionForm.invalid) {
       alert('Please fill all required fields correctly.');
@@ -116,7 +131,18 @@ export class DynamicEncryptionComponent implements OnInit {
       data,
     };
 
-    console.log('Encrypted Payload:', payload);
     this.encryptedData = this.encryptionService.encryptData(payload);
+  }
+
+  // Decrypt Function
+  decrypt(): void {
+    if (this.decryptionForm.invalid) {
+      alert('Please enter the encrypted data.');
+      return;
+    }
+
+    const encryptedInput = this.decryptionForm.value.encryptedData;
+    const result = this.encryptionService.decryptData(encryptedInput);
+    this.decryptionResult = result.valid ? result.data : 'Invalid or expired data.';
   }
 }

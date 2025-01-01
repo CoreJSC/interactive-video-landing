@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 import { routes } from '../app.routes';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 @Component({
@@ -17,7 +17,12 @@ export class HomeComponent {
   title = 'interactive-video-landing';
   appRoutes: Routes = [];
 
-  constructor(private router: Router) {
-    this.appRoutes = routes.filter(route => route.path);
+  constructor(
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.appRoutes = routes.filter(route => route.path);
+    }
   }
 }

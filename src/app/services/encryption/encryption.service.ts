@@ -1,7 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import * as CryptoJS from 'crypto-js';
 import { EncryptedPayload } from '../../shared/interfaces/data.model';
 import { environment } from '../../shared/environment/environment';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
@@ -27,7 +29,17 @@ export class EncryptionService {
         {
           startTime: 0,
           endTime: 10,
-          htmlFileUrl: 'https://www.youtube.com/watch?v=1p65LyjdpUM',
+          htmlFileUrl: 'assets/files/content1.html',
+        },
+        {
+          startTime: 11,
+          endTime: 20,
+          htmlFileUrl: 'assets/files/content2.html',
+        },
+        {
+          startTime: 21,
+          endTime: 30,
+          htmlFileUrl: 'assets/files/content3.html',
         },
       ],
     },
@@ -35,7 +47,15 @@ export class EncryptionService {
 
   _json = JSON.stringify(this._payload);
 
-  constructor() {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeEncryption();
+    }
+  }
+
+  initializeEncryption() {
     try {
       // Parse the Base64-encoded secret key
       this.secretKey = CryptoJS.enc.Base64.parse(environment.secretKey);
@@ -118,12 +138,12 @@ export class EncryptionService {
       const now = new Date();
   
       const valid = now >= startAfterDate && now <= expirationDate;
-  
+      
+      console.log(`Decrypted returned ${valid}: `, payload);
       return { valid, data: payload };
     } catch (error) {
       console.error('Decryption failed:', error);
       return { valid: false, data: null };
     }
   }
-  
 }

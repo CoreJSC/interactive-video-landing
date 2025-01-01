@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:interactive-video-landing": "node dist/interactive-video-landing/server/server.mjs"
+    "serve:ssr:interactive-video-landing": "node dist/interactive-video-landing/server/server.mjs",
+    "deploy:github": "git merge main && ng build --configuration=production --output-path=dist/interactive-video-landing --base-href=https://corejsc.github.io/interactive-video-landing/ && npx angular-cli-ghpages --dir=dist/interactive-video-landing/browser",
+    "deploy:github:main": "git checkout gh-pages && git merge main && npm  run deploy:github"
   },
   "private": true,
   "dependencies": {
@@ -21,6 +23,10 @@
     "@angular/platform-server": "^19.0.0",
     "@angular/router": "^19.0.0",
     "@angular/ssr": "^19.0.3",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@fortawesome/free-brands-svg-icons": "^6.7.2",
+    "@fortawesome/free-regular-svg-icons": "^6.7.2",
+    "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "crypto-js": "^4.2.0",
     "express": "^4.18.2",
     "rxjs": "~7.8.0",
