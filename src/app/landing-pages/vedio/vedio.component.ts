@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { VideoData, VideoPart } from '../../shared/interfaces/video-data.model';
 import { EncryptionService } from '../../services/encryption/encryption.service';
 import { CommonModule } from '@angular/common';
+import { EncryptedPayload, ValidatedPayload } from '../../shared/interfaces/data.model';
 
 @Component({
   selector: 'app-vedio',
@@ -11,6 +12,8 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./vedio.component.scss'],
 })
 export class VedioComponent implements OnInit {
+  validatedPayload: ValidatedPayload | null = null; // The decrypted and validated payload
+  encryptedPayload: EncryptedPayload | null = null; // The encrypted payload
   videoData: VideoData | null = null; // Holds the video data after decryption
   currentHtmlContent: string | null = null; // The HTML content displayed in the floating container
   valid: boolean = false; // Indicates whether the data is valid
@@ -25,27 +28,52 @@ export class VedioComponent implements OnInit {
 
   ngOnInit(): void {
     // Retrieve and decrypt data from the URL
-    this.route.queryParams.subscribe((params) => {
-      const encryptedData = params['data'];
-      if (encryptedData) {
-        try {
-          const result = this.encryptionService.decryptData(encryptedData);
-          this.valid = result.valid;
+    this.route.queryParams.subscribe({
+      next: (params) => this.handleDecryption(params['data']),
+      error: (error) => this.handleError('Failed to retrieve query parameters.', error),
+    });
+  }
 
-          if (this.valid) {
-            this.videoData = result.data as VideoData;
-          } else {
-            this.errorMessage = 'The data is no longer valid.';
-          }
-        } catch (error) {
-          console.error('Error decrypting video data:', error);
-          this.errorMessage = 'Error decrypting data.';
-          this.videoData = null;
+  private handleDecryption(encryptedData: string | undefined): void {
+    if (!encryptedData) {
+      this.setErrorMessage('No data provided in the URL.');
+      return;
+    }
+
+    try {
+      this.validatedPayload = this.encryptionService.decryptData(encryptedData);
+
+      if (!this.validatedPayload) {
+        this.setErrorMessage('Failed to validate the decrypted payload.');
+        return;
+      }
+
+      this.valid = this.validatedPayload.valid;
+
+      if (this.valid) {
+        if (this.validatedPayload.data && 'videoUrl' in this.validatedPayload.data) {
+          this.encryptedPayload = this.validatedPayload.data;
+          this.videoData = this.encryptedPayload.data as VideoData;
+        } else {
+          this.setErrorMessage('Decrypted data is not valid for a video.');
         }
       } else {
-        this.errorMessage = 'No data provided in the URL.';
+        this.setErrorMessage('The data is no longer valid.');
       }
-    });
+    } catch (error) {
+      this.handleError('Error decrypting data.', error);
+    }
+  }
+
+  private setErrorMessage(message: string): void {
+    this.errorMessage = message;
+    this.valid = false;
+    this.videoData = null;
+  }
+
+  private handleError(message: string, error: any): void {
+    console.error(message, error);
+    this.setErrorMessage(message);
   }
 
   onTimeUpdate(currentTime: number): void {

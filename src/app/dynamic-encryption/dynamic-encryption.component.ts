@@ -1,10 +1,15 @@
-import { Component } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { EncryptionService } from '../services/encryption/encryption.service';
+// src/app/dynamic-encryption/dynamic-encryption.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, FormArray, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { EncryptionService } from '../services/encryption/encryption.service';
+import { EncryptedPayload, Metadata } from '../shared/interfaces/data.model';
+import { VideoData, VideoPart } from '../shared/interfaces/video-data.model';
 
 @Component({
   selector: 'app-dynamic-encryption',
+  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -12,48 +17,108 @@ import { CommonModule } from '@angular/common';
   templateUrl: './dynamic-encryption.component.html',
   styleUrls: ['./dynamic-encryption.component.scss'],
 })
-export class DynamicEncryptionComponent {
-  encryptionForm: FormGroup; // Form group for dynamic data input
-  encryptedData: string[] = []; // List of encrypted results for the dropdown
+export class DynamicEncryptionComponent implements OnInit {
+  dataTypes: string[] = ['Video']; // Extendable for more types
+  encryptionForm: FormGroup;
+  encryptedData: string = '';
 
-  constructor(
-    private fb: FormBuilder,
-    private encryptionService: EncryptionService
-  ) {
-    // Initialize the form
+  constructor(private fb: FormBuilder, private encryptionService: EncryptionService) {
     this.encryptionForm = this.fb.group({
-      type: ['video', Validators.required], // Default to "video"
-      videoUrl: ['', Validators.required],
-      jsonData: ['', Validators.required], // JSON data input
-      validityDays: [1, [Validators.required, Validators.min(1)]],
+      dataType: ['Video', Validators.required], // Data type selection
+      metadata: this.fb.group({
+        creationDate: [this.getCurrentDateTimeLocal(), Validators.required],
+        startAfterDays: [0, [Validators.required, Validators.min(0)]],
+        validityDays: [30, [Validators.required, Validators.min(1)]],
+      }),
+      data: this.fb.group({}), // Placeholder for dynamic data
     });
   }
 
-  onSubmit(): void {
-    if (this.encryptionForm.valid) {
-      const formData = this.encryptionForm.value;
+  ngOnInit(): void {
+    this.buildForm();
 
-      // Parse JSON data input
-      let parsedJsonData;
-      try {
-        parsedJsonData = JSON.parse(formData.jsonData);
-      } catch (error) {
-        alert('Invalid JSON format for "jsonData". Please check your input.');
-        return;
-      }
+    // Listen to dataType changes to rebuild the form dynamically
+    this.encryptionForm.get('dataType')?.valueChanges.subscribe((type) => {
+      this.buildForm();
+    });
+  }
 
-      // Create payload
-      const payload = {
-        type: formData.type,
-        videoUrl: formData.videoUrl,
-        jsonData: parsedJsonData,
-      };
+  // Helper to get current date in 'yyyy-MM-ddTHH:mm' format for datetime-local input
+  getCurrentDateTimeLocal(): string {
+    const now = new Date();
+    now.setSeconds(0, 0);
+    return now.toISOString().substring(0, 16);
+  }
 
-      // Encrypt data
-      const encrypted = this.encryptionService.encryptData(payload, formData.validityDays);
-      this.encryptedData.push(encrypted); // Add to dropdown list
-    } else {
-      alert('Please fill in all required fields.');
+  buildForm(): void {
+    const dataGroup = this.encryptionForm.get('data') as FormGroup;
+    dataGroup.reset(); // Clear existing controls
+
+    if (this.encryptionForm.get('dataType')?.value === 'Video') {
+      const videoGroup = this.fb.group({
+        videoUrl: ['', [Validators.required, Validators.pattern(/^(http|https):\/\/[^ "]+$/)]],
+        screenSize: this.fb.group({
+          width: [1920, [Validators.required, Validators.min(1)]],
+          height: [1080, [Validators.required, Validators.min(1)]],
+        }),
+        htmlFileUrl: ['', [Validators.required, Validators.pattern(/^(http|https):\/\/[^ "]+$/)]],
+        ccFileUrl: ['', [Validators.required, Validators.pattern(/^(http|https):\/\/[^ "]+$/)]],
+        jsonData: this.fb.array([this.createVideoPart()]),
+      });
+
+      dataGroup.addControl('video', videoGroup);
     }
+    // Add more data types here if needed
+  }
+
+  createVideoPart(): FormGroup {
+    return this.fb.group({
+      startTime: [0, [Validators.required, Validators.min(0)]],
+      endTime: [10, [Validators.required, Validators.min(1)]],
+      htmlFileUrl: ['', [Validators.required, Validators.pattern(/^(http|https):\/\/[^ "]+$/)]],
+    });
+  }
+
+  get jsonData(): FormArray {
+    return (this.encryptionForm.get('data')?.get('video') as FormGroup)?.get('jsonData') as FormArray;
+  }
+
+  addVideoPart(): void {
+    this.jsonData.push(this.createVideoPart());
+  }
+
+  removeVideoPart(index: number): void {
+    if (this.jsonData.length > 1) {
+      this.jsonData.removeAt(index);
+    }
+  }
+
+  encrypt(): void {
+    if (this.encryptionForm.invalid) {
+      alert('Please fill all required fields correctly.');
+      return;
+    }
+
+    const metadata: Metadata = this.encryptionForm.value.metadata;
+    let data: VideoData | null = null;
+
+    if (this.encryptionForm.get('dataType')?.value === 'Video') {
+      const videoGroup = this.encryptionForm.get('data')?.get('video') as FormGroup;
+      data = {
+        videoUrl: videoGroup.value.videoUrl,
+        screenSize: videoGroup.value.screenSize,
+        htmlFileUrl: videoGroup.value.htmlFileUrl,
+        ccFileUrl: videoGroup.value.ccFileUrl,
+        jsonData: videoGroup.value.jsonData as VideoPart[],
+      };
+    }
+
+    const payload: EncryptedPayload = {
+      metadata,
+      data,
+    };
+
+    console.log('Encrypted Payload:', payload);
+    this.encryptedData = this.encryptionService.encryptData(payload);
   }
 }
